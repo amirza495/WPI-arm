@@ -34,6 +34,8 @@ extern TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN Private defines */
 
+#define PWM_PERIOD	(50000)
+
 /* USER CODE END Private defines */
 
 void MX_TIM1_Init(void);

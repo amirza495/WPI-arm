@@ -8,9 +8,12 @@
 #ifndef POTENTIOMETER_H_
 #define POTENTIOMETER_H_
 
+#include <stdint.h>
+#include "adc.h"
+
 typedef struct{
-	uint16_t up;
-	float convFactor;
+	uint16_t zero; // lsb
+	float convFactor; // lsb/deg
 }PotCalibration_t;
 
 typedef struct{

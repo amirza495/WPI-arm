@@ -27,7 +27,7 @@ void Potentiometer_read(){
 
 void Potentiometer_getPosition(Potentiometer_t *pot){
 
-	pot->pos = (float) (pot->rawPot - pot->cal.up)/pot->cal.convFactor;
+	pot->pos = (float) (pot->rawPot - pot->cal.zero)/pot->cal.convFactor;
 
 }
 

@@ -28,6 +28,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+// hardware
+#include "potentiometer.h"
+#include "motor.h"
+
+// system io
+#include "serialPrint.h"
 
 /* USER CODE END Includes */
 
@@ -60,6 +66,9 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+Motor_t gLowerMotor;
+Motor_t gUpperMotor;
+
 Potentiometer_t gLowerPot;
 Potentiometer_t gUpperPot;
 
@@ -71,52 +80,103 @@ Potentiometer_t gUpperPot;
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-  
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_TIM1_Init();
-  MX_USART2_UART_Init();
-  /* USER CODE BEGIN 2 */
+	/* USER CODE END 1 */
 
 
-  /* USER CODE END 2 */
- 
- 
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+
+	/* USER CODE BEGIN Init */
+
+	/* USER CODE END Init */
+
+	/* Configure the system clock */
+	SystemClock_Config();
+
+	/* USER CODE BEGIN SysInit */
+
+	/* USER CODE END SysInit */
+
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_ADC1_Init();
+	MX_TIM1_Init();
+	MX_USART2_UART_Init();
+
+	/* USER CODE BEGIN 2 */
+
+	/* Initialize Motors */
+	/* Lower Motor Config */
+	gLowerMotor.channel = TIM_CHANNEL_1; // PA8
+	gLowerMotor.voltage = 0.0;
+	gLowerMotor.dir1 = GPIO_PIN_6; // PA6
+	gLowerMotor.dir2 = GPIO_PIN_7; // PA7
+
+	/* Lower Motor Init */
+	Motor_init(&gLowerMotor);
+
+	/* Upper Motor */
+	gUpperMotor.channel = TIM_CHANNEL_2; // PA9
+	gUpperMotor.voltage = 0.0;
+	gUpperMotor.dir1 = GPIO_PIN_10; // PA10
+	gUpperMotor.dir2 = GPIO_PIN_11; // PA11
+
+	/* Upper Motor Init */
+	Motor_init(&gUpperMotor);
+
+	/* Initialize potentiometer values */
+	/* Lower Potentiometer */
+	/* zero: 1895 lsb */
+	gLowerPot.cal.zero = 1895;
+	/* +90: 3450 lsb */
+	uint16_t p90 = 3450;
+	float pConv = (float)(p90 - gLowerPot.cal.zero)/90; // lsb/deg
+	/* -90: 435 lsb */
+	uint16_t m90 = 435;
+	float mConv = (float)(gLowerPot.cal.zero - m90)/90; // lsb/deg
+	gLowerPot.cal.convFactor = (pConv + mConv)/2;
+
+	/* Upper Potentiometer */
+	/* zero: 1360 lsb */
+	gUpperPot.cal.zero = 1360;
+	/* +90: 2700 lsb */
+	p90 = 2700;
+	pConv = (float)(p90 - gUpperPot.cal.zero)/90; // lsb/deg
+	/* -90: 215 lsb */
+	m90 = 215;
+	mConv = (float)(gUpperPot.cal.zero - m90)/90; // lsb/deg
+	gUpperPot.cal.convFactor = (pConv + mConv)/2;
+
+	uartprintf("Potentiometers Initialized\r\n");
+
+	/* USER CODE END 2 */
 
 
 
-    /* USER CODE END WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	while (1)
+	{
 
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+		Potentiometer_read();
+		Potentiometer_getPosition(&gLowerPot);
+		Potentiometer_getPosition(&gUpperPot);
+
+		uartprintf("Lower Pot Position: %d\r\n", gLowerPot.rawPot);
+		uartprintf("Upper Pot Position: %d\r\n", gUpperPot.rawPot);
+		HAL_Delay(1000);
+
+
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
+	}
+	/* USER CODE END 3 */
 }
 
 /**
