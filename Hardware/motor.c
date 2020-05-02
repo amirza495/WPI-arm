@@ -27,17 +27,19 @@ void Motor_setSpeed(Motor_t *dcMotor, float voltage){
 
 	/* handle direction setting, and get absolute value of voltage */
 	if(voltage > 0){
+		/* moving up */
 
 		/* set direction pins */
-		HAL_GPIO_WritePin(GPIOA, dcMotor->dir2, RESET);
-		HAL_GPIO_WritePin(GPIOA, dcMotor->dir1, SET);
+		HAL_GPIO_WritePin(GPIOA, dcMotor->dir2, SET);
+		HAL_GPIO_WritePin(GPIOA, dcMotor->dir1, RESET);
 
 
 	}else if(voltage < 0){
+		/* moving down */
 
 		/* set direction pins */
-		HAL_GPIO_WritePin(GPIOA, dcMotor->dir1, RESET);
-		HAL_GPIO_WritePin(GPIOA, dcMotor->dir2, SET);
+		HAL_GPIO_WritePin(GPIOA, dcMotor->dir1, SET);
+		HAL_GPIO_WritePin(GPIOA, dcMotor->dir2, RESET);
 
 		/* reverse input voltage */
 		voltage *= -1;

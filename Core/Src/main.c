@@ -111,25 +111,37 @@ int main(void)
 	/* USER CODE BEGIN 2 */
 
 	/* Initialize Motors */
-	/* Lower Motor Config */
-	gLowerMotor.channel = TIM_CHANNEL_1; // PA8
+	uartprintf("Initializing Motors ..................... ");
+
+	/* Lower Motor Config
+	 * RED -> OUT1
+	 * BLACK -> OUT2
+	 * */
+	gLowerMotor.channel = TIM_CHANNEL_1; // PA8 -> ENA
 	gLowerMotor.voltage = 0.0;
-	gLowerMotor.dir1 = GPIO_PIN_6; // PA6
-	gLowerMotor.dir2 = GPIO_PIN_7; // PA7
+	gLowerMotor.dir1 = GPIO_PIN_6; // PA6 -> IN1
+	gLowerMotor.dir2 = GPIO_PIN_7; // PA7 -> IN2
 
 	/* Lower Motor Init */
 	Motor_init(&gLowerMotor);
 
-	/* Upper Motor */
-	gUpperMotor.channel = TIM_CHANNEL_2; // PA9
+	/* Upper Motor
+	 * RED -> OUT3
+	 * BLACK -> OUT4
+	 * */
+	gUpperMotor.channel = TIM_CHANNEL_2; // PA9 -> ENB
 	gUpperMotor.voltage = 0.0;
-	gUpperMotor.dir1 = GPIO_PIN_10; // PA10
-	gUpperMotor.dir2 = GPIO_PIN_11; // PA11
+	gUpperMotor.dir1 = GPIO_PIN_10; // PA10 -> IN3
+	gUpperMotor.dir2 = GPIO_PIN_11; // PA11 -> IN4
 
 	/* Upper Motor Init */
 	Motor_init(&gUpperMotor);
 
+	uartprintf("OK\r\n");
+
 	/* Initialize potentiometer values */
+	uartprintf("Initializing Potentiometer .............. ");
+
 	/* Lower Potentiometer */
 	/* zero: 1895 lsb */
 	gLowerPot.cal.zero = 1895;
@@ -152,7 +164,11 @@ int main(void)
 	mConv = (float)(gUpperPot.cal.zero - m90)/90; // lsb/deg
 	gUpperPot.cal.convFactor = (pConv + mConv)/2;
 
-	uartprintf("Potentiometers Initialized\r\n");
+	uartprintf("OK\r\n");
+
+	float speedDown = 8.0;
+	float speedUp = -speedDown;
+	float speedStopped = 0;
 
 	/* USER CODE END 2 */
 
@@ -170,6 +186,34 @@ int main(void)
 		uartprintf("Lower Pot Position: %d\r\n", gLowerPot.rawPot);
 		uartprintf("Upper Pot Position: %d\r\n", gUpperPot.rawPot);
 		HAL_Delay(1000);
+
+		uartprintf("Lower Motor Moving Up .......... ");
+		Motor_setSpeed(&gLowerMotor, speedUp);
+		HAL_Delay(330);
+		uartprintf("Done\r\n");
+
+		uartprintf("Lower Motor Moving Down ........ ");
+		Motor_setSpeed(&gLowerMotor, speedDown);
+		HAL_Delay(330);
+		uartprintf("Done\r\n");
+
+		Motor_setSpeed(&gLowerMotor, speedStopped);
+		HAL_Delay(330);
+
+
+		uartprintf("Upper Motor Moving Up .......... ");
+		Motor_setSpeed(&gUpperMotor, speedUp);
+		HAL_Delay(330);
+		uartprintf("Done\r\n");
+
+		uartprintf("Upper Motor Moving Down ........ ");
+		Motor_setSpeed(&gUpperMotor, speedDown);
+		HAL_Delay(330);
+		uartprintf("Done\r\n");
+
+		Motor_setSpeed(&gUpperMotor, speedStopped);
+		HAL_Delay(330);
+
 
 
 		/* USER CODE END WHILE */
