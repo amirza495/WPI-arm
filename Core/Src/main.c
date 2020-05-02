@@ -170,6 +170,30 @@ int main(void)
 	float speedUp = -speedDown;
 	float speedStopped = 0;
 
+	float upperPos = -20;
+	float lastUpperPos = 0;
+
+	/* time variables */
+	uint32_t t = 0;
+	uint32_t lastT = HAL_GetTick();
+	uint32_t dt = 0;
+
+	uint32_t hist[1024];
+	uint32_t i = 0;
+
+	/* errors */
+	float pErr = 0;
+	float dErr = 0;
+	float iErr = 0;
+
+	float pErrHist[1024];
+
+	/* control gains */
+	float Kp = 4;
+
+	/* control input */
+	float u = 0;
+
 	/* USER CODE END 2 */
 
 
@@ -179,41 +203,46 @@ int main(void)
 	while (1)
 	{
 
+		/* read potentiometers */
 		Potentiometer_read();
 		Potentiometer_getPosition(&gLowerPot);
 		Potentiometer_getPosition(&gUpperPot);
 
-		uartprintf("Lower Pot Position: %d\r\n", gLowerPot.rawPot);
-		uartprintf("Upper Pot Position: %d\r\n", gUpperPot.rawPot);
-		HAL_Delay(1000);
+		/* calculate time step */
+		t = HAL_GetTick();
+		dt = t - lastT;
 
-		uartprintf("Lower Motor Moving Up .......... ");
-		Motor_setSpeed(&gLowerMotor, speedUp);
-		HAL_Delay(330);
-		uartprintf("Done\r\n");
+		/* calculate errors */
+		pErr = upperPos - gUpperPot.pos;
+		iErr += pErr * dt/1000;
+		dErr = (gUpperPot.pos - lastUpperPos)/(dt/1000);
 
-		uartprintf("Lower Motor Moving Down ........ ");
-		Motor_setSpeed(&gLowerMotor, speedDown);
-		HAL_Delay(330);
-		uartprintf("Done\r\n");
+		/* calculate control input */
+		u = Kp * pErr;
 
-		Motor_setSpeed(&gLowerMotor, speedStopped);
-		HAL_Delay(330);
+		/* check bounds on control input */
+		if(u > 12){
+			u = 12.0;
+		}else if(u < -12){
+			u = -12.0;
+		}
 
+		/* move arm */
+		Motor_setSpeed(&gUpperMotor, u);
 
-		uartprintf("Upper Motor Moving Up .......... ");
-		Motor_setSpeed(&gUpperMotor, speedUp);
-		HAL_Delay(330);
-		uartprintf("Done\r\n");
+		/* update last values */
+		lastT = t;
+		lastUpperPos = gUpperPot.pos;
 
-		uartprintf("Upper Motor Moving Down ........ ");
-		Motor_setSpeed(&gUpperMotor, speedDown);
-		HAL_Delay(330);
-		uartprintf("Done\r\n");
+		//uartprintf("Timestep: %d\t", dt);
+		//uartprintf("Upper Pot Position: %d\r\n", gUpperPot.rawPot);
+		HAL_Delay(4);
 
-		Motor_setSpeed(&gUpperMotor, speedStopped);
-		HAL_Delay(330);
+		hist[i] = dt;
+		pErrHist[i] = pErr;
+		i++;
 
+		i = i % 1024;
 
 
 		/* USER CODE END WHILE */
