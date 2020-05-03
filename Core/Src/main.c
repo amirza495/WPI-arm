@@ -32,6 +32,9 @@
 #include "potentiometer.h"
 #include "motor.h"
 
+// controller
+#include "pid.h"
+
 // system io
 #include "serialPrint.h"
 
@@ -71,6 +74,9 @@ Motor_t gUpperMotor;
 
 Potentiometer_t gLowerPot;
 Potentiometer_t gUpperPot;
+
+PIDCtrl_t gLowerPID;
+PIDCtrl_t gUpperPID;
 
 /* USER CODE END 0 */
 
@@ -166,33 +172,28 @@ int main(void)
 
 	uartprintf("OK\r\n");
 
-	float speedDown = 8.0;
-	float speedUp = -speedDown;
-	float speedStopped = 0;
+	/* read initial position */
+	uartprintf("Reading Initial Positions ............... ");
+	Potentiometer_read();
+	Potentiometer_getPosition(&gLowerPot);
+	Potentiometer_getPosition(&gUpperPot);
 
-	float upperPos = -20;
-	float lastUpperPos = 0;
+	uartprintf("OK\r\n");
+
+
+	/* initialize PID Controllers */
+	uartprintf("Initializing Controllers ................ ");
+	/* lower */
+	PID_init(&gLowerPID, 4, 1, 0, 50, gLowerPot.pos);
+	/* upper */
+	PID_init(&gUpperPID, 4, 1, 0, -30, gUpperPot.pos);
+
+	uartprintf("OK\r\n");
 
 	/* time variables */
-	uint32_t t = 0;
-	uint32_t lastT = HAL_GetTick();
-	uint32_t dt = 0;
+	uint32_t time = 0;
+	uint32_t startTime = HAL_GetTick();
 
-	uint32_t hist[1024];
-	uint32_t i = 0;
-
-	/* errors */
-	float pErr = 0;
-	float dErr = 0;
-	float iErr = 0;
-
-	float pErrHist[1024];
-
-	/* control gains */
-	float Kp = 4;
-
-	/* control input */
-	float u = 0;
 
 	/* USER CODE END 2 */
 
@@ -203,47 +204,40 @@ int main(void)
 	while (1)
 	{
 
+		time = HAL_GetTick() - startTime;
+
 		/* read potentiometers */
 		Potentiometer_read();
 		Potentiometer_getPosition(&gLowerPot);
 		Potentiometer_getPosition(&gUpperPot);
 
-		/* calculate time step */
-		t = HAL_GetTick();
-		dt = t - lastT;
-
-		/* calculate errors */
-		pErr = upperPos - gUpperPot.pos;
-		iErr += pErr * dt/1000;
-		dErr = (gUpperPot.pos - lastUpperPos)/(dt/1000);
-
 		/* calculate control input */
-		u = Kp * pErr;
-
-		/* check bounds on control input */
-		if(u > 12){
-			u = 12.0;
-		}else if(u < -12){
-			u = -12.0;
-		}
+		/* lower motor controller */
+		PID_update(&gLowerPID, gLowerPot.pos);
+		/* upper motor controller */
+		PID_update(&gUpperPID, gUpperPot.pos);
 
 		/* move arm */
-		Motor_setSpeed(&gUpperMotor, u);
+		/* lower motor */
+		Motor_setSpeed(&gLowerMotor, gLowerPID.u);
+		/* upper motor */
+		Motor_setSpeed(&gUpperMotor, gUpperPID.u);
 
-		/* update last values */
-		lastT = t;
-		lastUpperPos = gUpperPot.pos;
+		HAL_Delay(3);
 
-		//uartprintf("Timestep: %d\t", dt);
-		//uartprintf("Upper Pot Position: %d\r\n", gUpperPot.rawPot);
-		HAL_Delay(4);
-
-		hist[i] = dt;
-		pErrHist[i] = pErr;
-		i++;
-
-		i = i % 1024;
-
+		/* motion profile */
+		if(time > 10000){
+			PID_changeSetpoint(&gLowerPID, 70);
+			PID_changeSetpoint(&gUpperPID, -15);
+		}else if(time > 7000){
+			PID_changeSetpoint(&gUpperPID, 45);
+		}else if(time > 5000){
+			PID_changeSetpoint(&gLowerPID, 30);
+			PID_changeSetpoint(&gUpperPID, -15);
+		}else if(time > 2500){
+			PID_changeSetpoint(&gLowerPID, 65);
+			PID_changeSetpoint(&gUpperPID, 20);
+		}
 
 		/* USER CODE END WHILE */
 

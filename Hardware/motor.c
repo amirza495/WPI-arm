@@ -6,7 +6,8 @@
  */
 #include "motor.h"
 
-void Motor_init(Motor_t *dcMotor){
+void Motor_init(Motor_t *dcMotor)
+{
 
 	/* turn off motor direction pins */
 	HAL_GPIO_WritePin(GPIOA, dcMotor->dir1, RESET);
@@ -20,7 +21,8 @@ void Motor_init(Motor_t *dcMotor){
 
 }
 
-void Motor_setSpeed(Motor_t *dcMotor, float voltage){
+void Motor_setSpeed(Motor_t *dcMotor, float voltage)
+{
 
 	/* set voltage value */
 	dcMotor->voltage = voltage;
